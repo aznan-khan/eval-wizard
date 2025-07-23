@@ -40,8 +40,8 @@ const DataUpload: React.FC<DataUploadProps> = ({ onUploadSuccess }) => {
       }
     } catch (error) {
       toast({
-        title: "Upload Failed",
-        description: "Could not upload the file. Please check your data format.",
+        title: "Backend Not Available",
+        description: "The backend server is not running. Please start the backend server at localhost:8000 or use the demo with mock data.",
         variant: "destructive",
       });
     } finally {
@@ -69,10 +69,11 @@ const DataUpload: React.FC<DataUploadProps> = ({ onUploadSuccess }) => {
       }
     } catch (error) {
       toast({
-        title: "Generation Failed",
-        description: "Could not generate mock data.",
-        variant: "destructive",
+        title: "Backend Not Available",
+        description: "Cannot connect to backend server. The demo will use local mock data for analysis.",
       });
+      // Trigger the callback anyway to let the parent component use local mock data
+      onUploadSuccess();
     } finally {
       setUploading(false);
     }
