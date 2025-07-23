@@ -52,6 +52,7 @@ class DataProcessor:
     async def validate_survey_responses(self, file_data: Dict[str, Any]) -> List[SurveyResponse]:
         """
         Validate survey responses from uploaded file
+        Supports your specific JSON format with SrNO, ResponseNum, Response Attributes, and Responses
         """
         try:
             responses = []
@@ -67,16 +68,31 @@ class DataProcessor:
             # Validate each response
             for i, raw_response in enumerate(raw_responses):
                 try:
+                    # Transform your format to expected format
+                    if 'Responses' in raw_response:
+                        # Your format: extract from nested structure
+                        survey_data = raw_response['Responses']
+                        response_attrs = raw_response.get('Response Attributes', {})
+                        
+                        # Map your field names to expected format
+                        transformed_response = self._transform_response_format(survey_data, response_attrs, raw_response.get('SrNO', i+1))
+                    else:
+                        # Standard format
+                        transformed_response = raw_response
+                    
                     # Add response_id if missing
-                    if 'response_id' not in raw_response:
-                        raw_response['response_id'] = f"response_{i+1}_{datetime.utcnow().timestamp()}"
+                    if 'response_id' not in transformed_response:
+                        transformed_response['response_id'] = f"response_{i+1}_{datetime.utcnow().timestamp()}"
                     
                     # Add timestamp if missing
-                    if 'timestamp' not in raw_response:
-                        raw_response['timestamp'] = datetime.utcnow()
+                    if 'timestamp' not in transformed_response:
+                        if 'LastUpdate' in response_attrs:
+                            transformed_response['timestamp'] = datetime.fromisoformat(response_attrs['LastUpdate'].replace('Z', '+00:00'))
+                        else:
+                            transformed_response['timestamp'] = datetime.utcnow()
                     
                     # Validate and create response object
-                    response = SurveyResponse(**raw_response)
+                    response = SurveyResponse(**transformed_response)
                     responses.append(response)
                     
                 except Exception as e:
