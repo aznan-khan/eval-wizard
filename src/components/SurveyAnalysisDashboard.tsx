@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { TrendingUp, Users, BookOpen, Star, MessageSquare, BarChart3 } from 'lucide-react';
+import DataUpload from './DataUpload';
 
 const SurveyAnalysisDashboard = () => {
   const [analysisData, setAnalysisData] = useState(null);
@@ -61,11 +62,30 @@ const SurveyAnalysisDashboard = () => {
 
   const runAnalysis = async () => {
     setLoading(true);
-    // Simulate API call delay
-    setTimeout(() => {
+    try {
+      // First try to run analysis with existing data
+      const response = await fetch('http://localhost:8000/api/analysis/quick');
+      
+      if (!response.ok) {
+        // If no data exists, generate mock data first
+        await fetch('http://localhost:8000/api/survey/responses/generate-mock?num_responses=17', {
+          method: 'POST'
+        });
+        
+        // Then run the analysis again
+        const analysisResponse = await fetch('http://localhost:8000/api/analysis/quick');
+        const data = await analysisResponse.json();
+        setAnalysisData(data);
+      } else {
+        const data = await response.json();
+        setAnalysisData(data);
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      // Fallback to mock data if backend is not available
       setAnalysisData(mockData);
-      setLoading(false);
-    }, 2000);
+    }
+    setLoading(false);
   };
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
@@ -88,6 +108,11 @@ const SurveyAnalysisDashboard = () => {
             <BarChart3 className="ml-2 h-4 w-4" />
           </Button>
         </div>
+
+        {/* Data Upload Section */}
+        {!analysisData && !loading && (
+          <DataUpload onUploadSuccess={() => {}} />
+        )}
 
         {loading && (
           <Card>
